@@ -8,38 +8,16 @@
 import SwiftUI
 import CoreMotion
 
-struct ActivityViewController: UIViewControllerRepresentable {
-
-    var activityItems: [Any]
-    var applicationActivities: [UIActivity]? = nil
-    @Environment(\.presentationMode) var presentationMode
-
-    func makeUIViewController(context: UIViewControllerRepresentableContext<ActivityViewController>) -> UIActivityViewController {
-        let controller = UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
-        controller.completionWithItemsHandler = { (activityType, completed, returnedItems, error) in
-            self.presentationMode.wrappedValue.dismiss()
-        }
-        return controller
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: UIViewControllerRepresentableContext<ActivityViewController>) {}
-
-}
-
-
 struct ContentView: View {
     @State var motion: CMMotionManager! = nil
     @State var accelerometersTimer: Timer? = nil
-    @State var sharingFile: URL? = nil
-    @State var activityViewPresented: Bool = false
-    let LOGGING_INTERVAL = 1.0 / 100.0
+    let LOGGING_INTERVAL = 1.0 / 50.0
     
     func toggleAccelerometers() {
         if self.accelerometersTimer != nil {
             // Stop it
             self.accelerometersTimer!.invalidate()
             self.accelerometersTimer = nil
-            self.activityViewPresented = true
             self.motion.stopAccelerometerUpdates()
             return
         }
@@ -47,10 +25,9 @@ struct ContentView: View {
         // Start it
         self.motion.startAccelerometerUpdates()
         
-        let url = FileManager.default.temporaryDirectory
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("\(Date().timeIntervalSince1970)_accelerometers")
             .appendingPathExtension("csv")
-        self.sharingFile = url
         
         if !FileManager.default.createFile(atPath: url.path, contents: nil) {
             print("File not created????")
@@ -74,23 +51,12 @@ struct ContentView: View {
                 Text("Start Logging Accelerometers") :
                 Text("Stop Logging Accelerometers")
             }
-            // TODO: Add
+            // TODO: Add other sensors
         }
         .padding()
         .onAppear {
             self.motion = CMMotionManager()
             self.motion.accelerometerUpdateInterval = LOGGING_INTERVAL
         }
-        .sheet(isPresented: $activityViewPresented, onDismiss: {
-            print("Dismiss")
-        }, content: {
-            ActivityViewController(activityItems: [self.sharingFile!])
-        })
-    }
-}
-
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
     }
 }
